@@ -1,68 +1,48 @@
 import mongoose from "mongoose";
 
-const userSchema = mongoose.Schema({
+const appointmentDiagnosisSchema = mongoose.Schema({
     _id:{
         required: true,
         type: String,
         trim: true
     },
-    WALLET_ADDRESS:{
+    CLINIC_WALLET_ADDRESS:{
         required: false,
         type: String,
         trim: true
     },
-    KEY:{
+    USER_WALLET_ADDRESS:{
         required: true,
         type: String,
         trim: true
     },
-    PIN:{
+    DOCTOR_ID:{
         required: true,
         type: String,
         trim: true
     },
-    FNAME:{
+    DATE:{
+        required: true,
+        type: Date,
+        trim: true
+    },
+    TIME:{
         required: true,
         type: String,
         trim: true
     },
-    LNAME:{
+    RECORDS:{
         required: true,
         type: String,
         trim: true
     },
-    EMAIL:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    PASSWORD:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    HKID_NO:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    PHONE_NO:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    ADDRESS:{
+    REMARKS:{
         required: false,
-        type: String,
-        trim: true
-    },
-    BIRTH_DATE:{
-        required: true,
         type: String,
         trim: true
     }
 });
 
-const User = mongoose.model("User", userSchema, 'MAS_USER_INFO');
+const AppointmentDiagnosis = mongoose.model("AppointmentDiagnosis", appointmentDiagnosisSchema, 'MAS_APPOINTMENT_DIA_INFO');
 
-module.exports = User;
+module.exports = AppointmentDiagnosis;

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const userSchema = mongoose.Schema({
+const clinicSchema = mongoose.Schema({
     _id:{
         required: true,
         type: String,
@@ -8,26 +8,6 @@ const userSchema = mongoose.Schema({
     },
     WALLET_ADDRESS:{
         required: false,
-        type: String,
-        trim: true
-    },
-    KEY:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    PIN:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    FNAME:{
-        required: true,
-        type: String,
-        trim: true
-    },
-    LNAME:{
-        required: true,
         type: String,
         trim: true
     },
@@ -41,7 +21,22 @@ const userSchema = mongoose.Schema({
         type: String,
         trim: true
     },
-    HKID_NO:{
+    AREA:{
+        required: true,
+        type: String,
+        trim: true
+    },
+    DISTRICT:{
+        required: true,
+        type: String,
+        trim: true
+    },
+    ADDRESS:{
+        required: true,
+        type: String,
+        trim: true
+    },
+    NAME:{
         required: true,
         type: String,
         trim: true
@@ -51,18 +46,28 @@ const userSchema = mongoose.Schema({
         type: String,
         trim: true
     },
-    ADDRESS:{
+    OPENING_HRS:{
         required: false,
         type: String,
         trim: true
     },
-    BIRTH_DATE:{
+    IMAGE_PATH:{
+        required: false,
+        type: String,
+        trim: true
+    },
+    ACTIVE:{
+        required: true,
+        type: String,
+        trim: true
+    },
+    VERIFIED:{
         required: true,
         type: String,
         trim: true
     }
 });
 
-const User = mongoose.model("User", userSchema, 'MAS_USER_INFO');
+const Clinic = mongoose.model("Clinic", clinicSchema, 'MAS_CLINIC_INFO');
 
-module.exports = User;
+module.exports = Clinic;
