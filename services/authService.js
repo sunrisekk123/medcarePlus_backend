@@ -4,13 +4,14 @@ import crypto from "crypto";
 import dotenv from 'dotenv';
 import Web3 from "web3";
 import bcryptjs from "bcryptjs";
+
 dotenv.config();
 const ganacheServer = `http://${process.env.GANACHE_HOST}:${process.env.GANACHE_PORT}`;
 const web3 = new Web3(new Web3.providers.HttpProvider(ganacheServer));
 
 const healthRecordContractPath = require("../build/contracts/HealthRecord.json");
 const healthRecordContractABI = healthRecordContractPath["abi"];
-const healthRecordContractAddress = "0x642667A5f0E5503AdD249F25745954D9558e9383";
+const healthRecordContractAddress = "0xC0e71912a00D25508fc1616C9ddf3Bec5a618c9a";
 const healthRecordContract = new web3.eth.Contract(healthRecordContractABI, healthRecordContractAddress);
 
 export default class AuthService {
@@ -32,48 +33,36 @@ export default class AuthService {
     }
 
     async createWallet(){
-        return web3.eth.accounts.privateKeyToAccount("0x32118c149a17807b24eca0986441d591f8368e4835f791b8f64c5165328bb692");
+        // return web3.eth.accounts.privateKeyToAccount("0x4bf149af2a5ce143fa39474e29891de9ed7baa38e0ebe86e0808eb60947279cf");
+        // return web3.eth.accounts.privateKeyToAccount("0xac126f348a15f06c623f74a8669259f90f89dede04426f1739add710278cbd36");
+         return web3.eth.accounts.privateKeyToAccount("0x28c729be9af5de2a2557ae9b68df102fd5994c7caf7cf8ef87f82df4e61af28d");
+    }
+
+    async createWalletClinic(){
+        return web3.eth.accounts.privateKeyToAccount("0x8fd6aa55e445ce5e88b915f7fdeca23d89bfbf1458d36917232ca01fc7766ebd");
     }
 
     async encryptPrivateKey(pKeys){
-        const dataAfterSign = web3.eth.accounts.sign(pKeys, pKeys);
         const keySign = crypto.randomBytes(32);
         const ivSign = crypto.randomBytes(16);
-        const cipherSign = crypto.createCipheriv('aes-256-cbc', Buffer.from(keySign), ivSign);
-        const encryptedSign = Buffer.concat([cipherSign.update(dataAfterSign.signature), cipherSign.final()]);
 
-        const keyHash = crypto.randomBytes(32);
-        const ivHash = crypto.randomBytes(16);
-        const cipherHash = crypto.createCipheriv('aes-256-cbc', Buffer.from(keyHash), ivHash);
-        const encryptedHashMsg = Buffer.concat([cipherHash.update(dataAfterSign.messageHash), cipherHash.final()]);
-        return JSON.stringify({encryptedSign: encryptedSign.toString('hex'), ivSign: ivSign.toString('hex'), keySign: keySign.toString('hex'), encryptedHash: encryptedHashMsg.toString('hex'), ivHash: ivHash.toString('hex'), keyHash:keyHash.toString('hex')});
+        const cipherSign = crypto.createCipheriv('aes-256-cbc', keySign, ivSign);
+        const encryptedSign1 = cipherSign.update(pKeys, "utf-8", "hex");
+        const encryptedSign2 = encryptedSign1 + cipherSign.final("hex");
+
+        return JSON.stringify({encryptedSign: encryptedSign2, iSign: ivSign.toString('hex'), kSign: keySign.toString('hex')});
     }
 
     async decryptPrivateKey(dbKey){
         const dbData = JSON.parse(dbKey);
+        const ivS =  Buffer.from(dbData.iSign, 'hex');
+        const keyS = Buffer.from(dbData.kSign, 'hex');
+        const encryptedSignature = dbData.encryptedSign;
 
-        const ivS =  Buffer.from(dbData.ivSign, 'hex');
-        const keyS = Buffer.from(dbData.keySign, 'hex');
-        const ivH =  Buffer.from(dbData.ivHash, 'hex');
-        const keyH = Buffer.from(dbData.keyHash, 'hex');
-        const encryptedSignature = Buffer.from(dbData.encryptedSign, 'hex');
-        const encryptedHashMsg = Buffer.from(dbData.encryptedHash, 'hex');
+        const decipherS = crypto.createDecipheriv('aes-256-cbc', keyS, ivS);
 
-        const decipherS = crypto.createDecipheriv('aes-256-cbc', Buffer.from(keyS), ivS);
-        const decipherH = crypto.createDecipheriv('aes-256-cbc', Buffer.from(keyH), ivH);
-
-        const signature = Buffer.concat([decipherS.update(encryptedSignature), decipherS.final()]);
-        const hashedMsg = Buffer.concat([decipherH.update(encryptedHashMsg), decipherH.final()]);
-
-        const v = "0x"+signature.toString().substring(130,133);
-        const r = "0x"+signature.toString().substring(2,66);
-        const s = "0x"+signature.toString().substring(66,130);
-        return await web3.eth.accounts.recover({
-            messageHash: hashedMsg.toString(),
-            v: v,
-            r: r,
-            s: s
-        });
+        const signature1 = decipherS.update(encryptedSignature, "hex", "utf-8");
+        return signature1 + decipherS.final("utf8");
     }
 
     async pinProcessing(walletAddress, pin){

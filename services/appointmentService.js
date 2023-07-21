@@ -6,7 +6,7 @@ dotenv.config();
 const ganacheServer = `http://${process.env.GANACHE_HOST}:${process.env.GANACHE_PORT}`;
 const appointmentContract = require("../build/contracts/Appointment.json");
 const contractABI = appointmentContract["abi"];
-const contractAddress = "0x17C5A62b095ADC4ABa4F3143adFbB0F8dB8079FC";
+const contractAddress = "0x168e0300cd321AF71CFd51f4d9259Cb1cd621cb7";
 const web3 = new Web3(new Web3.providers.HttpProvider(ganacheServer));
 const contract = new web3.eth.Contract(contractABI, contractAddress);
 import UserModel from "../models/user";
@@ -14,7 +14,7 @@ import UserModel from "../models/user";
 export default class AppointmentService {
 
     async addAppointment(walletAddress, clinicAddress, doctor, date, time, status){
-        const appointmentId = walletAddress+clinicAddress+date+time;
+        const appointmentId = walletAddress.toString()+clinicAddress.toString()+date.toString()+time.toString();
         console.log(appointmentId);
         console.log(walletAddress);
         console.log(clinicAddress);
@@ -22,7 +22,16 @@ export default class AppointmentService {
         console.log(date);
         console.log(time);
         console.log(status);
-        const result = await contract.methods.insertAppointment(appointmentId, walletAddress, clinicAddress, doctor, date, time, web3.utils.asciiToHex(status.toString())).send({from: walletAddress.toString(), gas: "6721975"});
+        const gas = "6721975"
+        const result = await contract.methods.insertAppointment(
+            appointmentId,
+            walletAddress,
+            clinicAddress,
+            doctor,
+            date,
+            time,
+            web3.utils.asciiToHex(status.toString())
+        ).send({from: walletAddress.toString(), gas: gas});
         console.log(result)
         return true;
     }
@@ -48,7 +57,6 @@ export default class AppointmentService {
         return await contract.getPastEvents('LogUpdateAppointment', {
             filter: {userAddress: address},
             fromBlock: 0,
-            toBlock: 'latest'
         }, function (error, events) {
             console.log(events[0].returnValues)
             return events;
@@ -74,6 +82,7 @@ export default class AppointmentService {
         });
     }
 
+
     async getAppointmentByUpdateEventUsingClinicAddress(address){
         return await contract.getPastEvents('LogUpdateAppointment', {
             filter: {clinicAddress: address},
@@ -85,7 +94,35 @@ export default class AppointmentService {
         });
     }
 
-    async updateAppointmentStatus(id, address, accountType, status){
-        return await contract.methods.updateAppointmentStatus(id, web3.utils.asciiToHex(status.toString())).send({from: address.toString(), gas: "6721975"});
+    async getAppointmentByNewEventUsingClinicAddressByDate(address,date){
+        return await contract.getPastEvents('LogNewAppointment', {
+            filter: {clinicAddress: address, date:date},
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function (error, events) {
+            console.log(events[0].returnValues)
+            return events;
+        });
+    }
+
+
+    async getAppointmentByUpdateEventUsingClinicAddressByDate(address,date){
+        return await contract.getPastEvents('LogUpdateAppointment', {
+            filter: {clinicAddress: address,date:date},
+            fromBlock: 0,
+            toBlock: 'latest'
+        }, function (error, events) {
+            console.log(events[0].returnValues)
+            return events;
+        });
+    }
+
+    async updateAppointmentStatus(id, address, status){
+        console.log(id)
+        const gas = "6721975";
+        return contract.methods.updateAppointmentStatus(id, web3.utils.asciiToHex(status.toString())).send({
+            from: address.toString(),
+            gas: gas
+        });
     }
 }

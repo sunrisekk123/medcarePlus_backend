@@ -6,12 +6,28 @@ import bcryptjs from "bcryptjs";
 
 export default class HomeService {
     async getClinicItems(){
-        return Clinic.aggregate([{
+        return Clinic.aggregate([
+            {
+                $match:{
+                    ACTIVE:"Y"
+                }
+            },
+            {
             $lookup:{
                 from: "MAS_CLINIC_DOCTOR_INFO",
                 localField: "_id",
                 foreignField: "CLINIC_ID",
                 as: "DOCTOR_INFO"
+            }
+        }]);
+    }
+    async getDoctorItems(){
+        return ClinicDoctor.aggregate([{
+            $lookup:{
+                from: "MAS_CLINIC_INFO",
+                localField: "CLINIC_ID",
+                foreignField: "_id",
+                as: "CLINIC_INFO"
             }
         }]);
     }

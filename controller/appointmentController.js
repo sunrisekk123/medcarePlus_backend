@@ -22,15 +22,15 @@ export async function handleInsertAppointment(req, res, next) {
 
 export async function handleUpdateAppointmentStatus(req, res, next) {
     try {
-        const {id, address, accountType, status} = req.body;
-        console.log(id)
-        console.log(address)
-        const isSuccess = await appointmentServices.updateAppointmentStatus(id, address, accountType, status);
+        const {id, clinicAddress, date, time, address, accountType, status} = req.body;
+
+        const appointmentId = address+clinicAddress+date+time;
+        const isSuccess = await appointmentServices.updateAppointmentStatus(appointmentId, address, status);
         if (!isSuccess) {
             return res.status(400).json({ msg: "Fail" });
         }
 
-        res.json(isSuccess);
+        res.json([isSuccess.toString()]);
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -51,11 +51,12 @@ export async function handleGetAppointmentUsingUserAddress(req, res, next) {
         const userAddress = req.params.wallet_address;
         const newAppointmentEvent = await appointmentServices.getAppointmentByNewEventUsingUserAddress(userAddress);
         const updateAppointmentEvent = await appointmentServices.getAppointmentByUpdateEventUsingUserAddress(userAddress);
+
         let resultList = [];
         let updateLogReturnList = [];
         const user = await appointmentServices.getAppointmentUserInfo(userAddress);
         if(updateAppointmentEvent.length>0){
-            updateAppointmentEvent.forEach((e)=>{
+            for (const e of updateAppointmentEvent) {
                 updateLogReturnList.push({
                     appointmentId: e.returnValues["appointmentId"],
                     userAddress: e.returnValues["userAddress"],
@@ -67,17 +68,20 @@ export async function handleGetAppointmentUsingUserAddress(req, res, next) {
                     status: web3.utils.hexToAscii(e.returnValues["status"]),
 
                 })
-            })
+            }
         }
         if(newAppointmentEvent.length>0){
+
+            const updateLogReverseList = updateLogReturnList.slice().reverse();
             for (const e of newAppointmentEvent) {
                 const clinic = await appointmentServices.getAppointmentClinicInfo(e.returnValues["clinicAddress"]);
-                if(updateLogReturnList.length > 0){
-                    const findInUpdateLog = updateLogReturnList.findLast((update)=> e["appointmentId"] === update["appointmentId"]);
-                    if(findInUpdateLog.length>0){
+                if(updateLogReverseList.length > 0 && updateLogReturnList.length > 0){
+                    const findInUpdateLog =  updateLogReverseList.find((update) => (update.appointmentId.localeCompare(e.returnValues["appointmentId"]) ===0));
+
+                    if(findInUpdateLog !== undefined){
                         resultList.push({
-                            appointmentId: findInUpdateLog.returnValues["appointmentId"],
-                            userAddress: findInUpdateLog.returnValues["userAddress"],
+                            appointmentId: findInUpdateLog["appointmentId"],
+                            userAddress: findInUpdateLog["userAddress"],
                             userFName: user[0]["FNAME"],
                             userLName: user[0]["LNAME"],
                             userEmail: user[0]["EMAIL"],
@@ -85,19 +89,20 @@ export async function handleGetAppointmentUsingUserAddress(req, res, next) {
                             userPhone: user[0]["PHONE_NO"],
                             userHomeAddress: user[0]["ADDRESS"],
                             userBirthDate: user[0]["BIRTH_DATE"],
-                            clinicAddress: findInUpdateLog.returnValues["clinicAddress"],
+                            clinicAddress: findInUpdateLog["clinicAddress"],
                             clinicName: clinic[0]["NAME"],
                             clinicLocation: clinic[0]["ADDRESS"],
                             clinicDistrict: clinic[0]["DISTRICT"],
                             clinicArea: clinic[0]["AREA"],
                             clinicImage: clinic[0]["IMAGE_PATH"],
-                            index: findInUpdateLog.returnValues["index"].toString(),
-                            doctor: findInUpdateLog.returnValues["doctor"],
-                            date: findInUpdateLog.returnValues["date"],
-                            time: findInUpdateLog.returnValues["time"],
-                            status: web3.utils.hexToAscii(findInUpdateLog.returnValues["status"]),
+                            index: findInUpdateLog["index"].toString(),
+                            doctor: findInUpdateLog["doctor"],
+                            date: findInUpdateLog["date"],
+                            time: findInUpdateLog["time"],
+                            status: findInUpdateLog["status"]
                         })
                     }else {
+
                         resultList.push({
                             appointmentId: e.returnValues["appointmentId"],
                             userAddress: e.returnValues["userAddress"],
@@ -156,7 +161,7 @@ export async function handleGetAppointmentUsingUserAddress(req, res, next) {
             }
             return 0;
         });
-        console.log(resultList);
+
         res.json({data: resultList});
     } catch (e) {
         res.status(500).json({error: e.message});
@@ -173,7 +178,7 @@ export async function handleGetAppointmentUsingClinicAddress(req, res, next) {
         let updateLogReturnList = [];
         const clinic = await appointmentServices.getAppointmentClinicInfo(clinicAddress);
         if(updateAppointmentEvent.length>0){
-            updateAppointmentEvent.forEach((e)=>{
+            for (const e of updateAppointmentEvent) {
                 updateLogReturnList.push({
                     appointmentId: e.returnValues["appointmentId"],
                     userAddress: e.returnValues["userAddress"],
@@ -184,18 +189,19 @@ export async function handleGetAppointmentUsingClinicAddress(req, res, next) {
                     time: e.returnValues["time"],
                     status: web3.utils.hexToAscii(e.returnValues["status"]),
                 })
-            })
+            }
         }
         if(newAppointmentEvent.length>0){
+            const updateLogReverseList = updateLogReturnList.slice().reverse();
             for (const e of newAppointmentEvent) {
                 const user = await appointmentServices.getAppointmentUserInfo(e.returnValues["userAddress"]);
-
                 if(updateLogReturnList.length > 0){
-                    const findInUpdateLog = updateLogReturnList.findLast((update)=> e["appointmentId"] === update["appointmentId"]);
-                    if(findInUpdateLog.length>0){
+                    const findInUpdateLog =  updateLogReverseList.find((update) => (update.appointmentId.localeCompare(e.returnValues["appointmentId"]) ===0));
+
+                    if(findInUpdateLog !== undefined){
                         resultList.push({
-                            appointmentId: findInUpdateLog.returnValues["appointmentId"],
-                            userAddress: findInUpdateLog.returnValues["userAddress"],
+                            appointmentId: findInUpdateLog["appointmentId"],
+                            userAddress: findInUpdateLog["userAddress"],
                             userFName: user[0]["FNAME"],
                             userLName: user[0]["LNAME"],
                             userEmail: user[0]["EMAIL"],
@@ -203,17 +209,17 @@ export async function handleGetAppointmentUsingClinicAddress(req, res, next) {
                             userPhone: user[0]["PHONE_NO"],
                             userHomeAddress: user[0]["ADDRESS"],
                             userBirthDate: user[0]["BIRTH_DATE"],
-                            clinicAddress: findInUpdateLog.returnValues["clinicAddress"],
+                            clinicAddress: findInUpdateLog["clinicAddress"],
                             clinicName: clinic[0]["NAME"],
                             clinicLocation: clinic[0]["ADDRESS"],
                             clinicDistrict: clinic[0]["DISTRICT"],
                             clinicArea: clinic[0]["AREA"],
                             clinicImage: clinic[0]["IMAGE_PATH"],
-                            index: findInUpdateLog.returnValues["index"].toString(),
-                            doctor: findInUpdateLog.returnValues["doctor"],
-                            date: findInUpdateLog.returnValues["date"],
-                            time: findInUpdateLog.returnValues["time"],
-                            status: web3.utils.hexToAscii(findInUpdateLog.returnValues["status"]),
+                            index: findInUpdateLog["index"].toString(),
+                            doctor: findInUpdateLog["doctor"],
+                            date: findInUpdateLog["date"],
+                            time: findInUpdateLog["time"],
+                            status: findInUpdateLog["status"]
                         })
                     }else {
                         resultList.push({
@@ -274,9 +280,53 @@ export async function handleGetAppointmentUsingClinicAddress(req, res, next) {
             }
             return 0;
         });
-        console.log("-----------");
-        console.log(resultList);
-        console.log("-----------");
+
+        res.json({data: resultList});
+    } catch (e) {
+        res.status(500).json({error: e.message});
+    }
+}
+
+export async function handleGetAppointmentUsingDateAndClinicAddress(req, res, next) {
+    try {
+        const clinicAddress = req.params.clinicAddress;
+        const date = req.params.date;
+
+
+        const newAppointmentEvent = await appointmentServices.getAppointmentByNewEventUsingClinicAddressByDate(clinicAddress,date);
+        const updateAppointmentEvent = await appointmentServices.getAppointmentByUpdateEventUsingClinicAddressByDate(clinicAddress,date);
+        let resultList = [];
+        let updateLogReturnList = [];
+        if(updateAppointmentEvent.length>0){
+            for (const e of updateAppointmentEvent) {
+                updateLogReturnList.push(
+                    e.returnValues["time"],
+                )
+            }
+        }
+        if(newAppointmentEvent.length>0){
+            const updateLogReverseList = updateLogReturnList.slice().reverse();
+            for (const e of newAppointmentEvent) {
+                if(updateLogReturnList.length > 0){
+                    const findInUpdateLog =  updateLogReverseList.find((update) => (update.localeCompare(e.returnValues["time"]) ===0));
+
+                    if(findInUpdateLog !== undefined){
+                        resultList.push(
+                            findInUpdateLog
+                        )
+                    }else {
+                        resultList.push(
+                            e.returnValues["time"]
+                        )
+                    }
+                }else{
+                    resultList.push(
+                        e.returnValues["time"]
+                    )
+                }
+            }
+        }
+
         res.json({data: resultList});
     } catch (e) {
         res.status(500).json({error: e.message});

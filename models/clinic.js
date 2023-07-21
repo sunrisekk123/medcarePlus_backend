@@ -11,6 +11,11 @@ const clinicSchema = mongoose.Schema({
         type: String,
         trim: true
     },
+    KEY:{
+        required: false,
+        type: String,
+        trim: true
+    },
     EMAIL:{
         required: true,
         type: String,

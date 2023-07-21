@@ -16,6 +16,18 @@ export async function handleGetHomepageInfo(req, res, next) {
     }
 }
 
+export async function handleGetHomepageDoctor(req, res, next) {
+    try {
+        const doctorList = await homeServices.getDoctorItems();
+        if (!doctorList) {
+            return res.status(400).json({ msg: "No data found" });
+        }
+        res.json({ data: doctorList });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+}
+
 export async function handleGetClinicInfo(req, res, next) {
     try {
         const userEmail = req.params.email;

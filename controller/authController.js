@@ -61,7 +61,7 @@ export async function handleRegister(req, res, next) {
         }
 
         const hashedPassword = await bcryptjs.hashSync(password, 8);
-        const date1 = await dateHyphenToDate(birthDate);
+
         // create wallet
         const keys = await authServices.createWallet();
         console.log(keys);
@@ -77,7 +77,7 @@ export async function handleRegister(req, res, next) {
             PASSWORD: hashedPassword,
             FNAME: fname,
             LNAME: lname,
-            BIRTH_DATE: date1,
+            BIRTH_DATE: birthDate,
             HKID_NO: hkid,
             PHONE_NO: phoneNo,
             ADDRESS: "",
@@ -102,6 +102,10 @@ export async function handleRegisterClinic(req, res, next) {
             return res.status(400).json({msg: "Clinic with same email already exists!"});
         }
 
+        const keys = await authServices.createWalletClinic();
+        // private key process
+        const resultKetInput = await authServices.encryptPrivateKey(keys.privateKey);
+
         const hashedPassword = await bcryptjs.hashSync(password, 8);
         let clinicDoc = new Clinic({
             _id: "C".concat(crypto.randomBytes(6).toString("hex")),
@@ -116,7 +120,8 @@ export async function handleRegisterClinic(req, res, next) {
             IMAGE_PATH: "",
             ACTIVE: "N",
             VERIFIED: "N",
-            WALLET_ADDRESS: ""
+            WALLET_ADDRESS: keys.address,
+            KEY: resultKetInput
         });
 
         const result = await authServices.addClinicInfo(clinicDoc)
@@ -155,6 +160,31 @@ export async function handleGetDistrictOptions(req, res, next) {
         const result = await District.find();
 
         res.json({data: result});
+    } catch (e) {
+        res.status(500).json({error: e.message});
+    }
+}
+
+
+
+export async function handleTestEncryptPk(req, res, next) {
+    try {
+        const pk = "0x0959d4c95be736db936d6c91c0cda7979b2c12b16365abf391972c0c561b9a1d";
+        const resultKetInput = await authServices.encryptPrivateKey(pk);
+
+        await Clinic.findOneAndUpdate({EMAIL:"cmltc1@gmail.com"}, {KEY:resultKetInput})
+        res.json({data: resultKetInput.toString()});
+    } catch (e) {
+        res.status(500).json({error: e.message});
+    }
+}
+
+export async function handleTestDecryptPk(req, res, next) {
+    try {
+        const user = await Clinic.find({EMAIL:"cmltc1@gmail.com"});
+        const resultKetInput = await authServices.decryptPrivateKey(user[0]["KEY"]);
+
+        res.json({data: resultKetInput});
     } catch (e) {
         res.status(500).json({error: e.message});
     }
